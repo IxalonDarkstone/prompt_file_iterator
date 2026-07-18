@@ -1,14 +1,16 @@
 import json
 import folder_paths
+import comfy.sd
+import comfy.utils
 
 
 class LoraIterator:
     """
-    Iterates over a user-selected set of LoRAs.
+    Iterates over a user-selected set of LoRAs, applying each one to the
+    incoming model and clip and outputting the patched MODEL and CLIP directly.
     Slots are managed by the JS extension (web/model_selector.js) which
     serialises selected names into models_json. If no models are selected,
     all available LoRAs are used.
-    Wire lora_name into a LoraLoader node.
 
     cycle_every / step_size: see PromptIterator for the chaining pattern.
     """
@@ -17,22 +19,26 @@ class LoraIterator:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "global_run":  ("INT",    {"forceInput": True}),
-                "cycle_every": ("INT",    {"default": 1, "min": 1, "max": 99999}),
-                "models_json": ("STRING", {"default": "[]"}),
+                "model":          ("MODEL",),
+                "clip":           ("CLIP",),
+                "global_run":     ("INT",   {"forceInput": True}),
+                "cycle_every":    ("INT",   {"default": 1, "min": 1, "max": 99999}),
+                "strength_model": ("FLOAT", {"default": 1.0, "min": -10.0, "max": 10.0, "step": 0.01}),
+                "strength_clip":  ("FLOAT", {"default": 1.0, "min": -10.0, "max": 10.0, "step": 0.01}),
+                "models_json":    ("STRING", {"default": "[]"}),
             }
         }
 
-    RETURN_TYPES  = ("STRING",    "INT",        "INT",          "INT")
-    RETURN_NAMES  = ("lora_name", "file_index", "loras_found",  "step_size")
+    RETURN_TYPES  = ("MODEL",  "CLIP",  "STRING",    "INT",        "INT",         "INT")
+    RETURN_NAMES  = ("model",  "clip",  "lora_name", "file_index", "loras_found", "step_size")
     FUNCTION      = "iterate"
     CATEGORY      = "Iterators"
 
     @classmethod
-    def IS_CHANGED(cls, global_run, cycle_every, models_json):
+    def IS_CHANGED(cls, model, clip, global_run, cycle_every, strength_model, strength_clip, models_json):
         return float("nan")
 
-    def iterate(self, global_run, cycle_every, models_json):
+    def iterate(self, model, clip, global_run, cycle_every, strength_model, strength_clip, models_json):
         cycle_every = max(1, cycle_every)
         try:
             selected = [m for m in json.loads(models_json) if m]
@@ -44,11 +50,21 @@ class LoraIterator:
 
         total = len(selected)
         if total == 0:
-            return ("", 0, 0, cycle_every)
+            raise ValueError("LoraIterator: no LoRAs found")
 
         file_index = (global_run // cycle_every) % total
         step_size  = cycle_every * total
-        return (selected[file_index], file_index, total, step_size)
+        lora_name  = selected[file_index]
+
+        lora_path = folder_paths.get_full_path("loras", lora_name)
+        if lora_path is None:
+            raise ValueError(f"LoraIterator: file not found for {lora_name!r}")
+
+        lora = comfy.utils.load_torch_file(lora_path, safe_load=True)
+        model_out, clip_out = comfy.sd.load_lora_for_models(
+            model, clip, lora, strength_model, strength_clip
+        )
+        return (model_out, clip_out, lora_name, file_index, total, step_size)
 
 
 NODE_CLASS_MAPPINGS        = {"LoraIterator": LoraIterator}
