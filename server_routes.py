@@ -2,8 +2,18 @@ import os
 import sys
 
 try:
+    import folder_paths as _fp
     from aiohttp import web
     from server import PromptServer
+
+    @PromptServer.instance.routes.get('/iterator_suite/models')
+    async def list_models(request):
+        model_type = request.query.get('type', 'checkpoints')
+        try:
+            models = sorted(_fp.get_filename_list(model_type))
+            return web.json_response({"models": models})
+        except Exception as exc:
+            return web.json_response({"error": str(exc), "models": []}, status=400)
 
     @PromptServer.instance.routes.get('/iterator_suite/browse')
     async def browse_directory(request):

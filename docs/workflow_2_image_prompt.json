@@ -1,0 +1,208 @@
+{
+  "last_node_id": 11,
+  "last_link_id": 16,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "IterationController",
+      "pos": [50, 320],
+      "size": {"0": 210, "1": 82},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "global_run", "type": "INT", "links": [1, 2], "slot_index": 0}
+      ],
+      "properties": {"Node name for S&R": "IterationController"},
+      "widgets_values": ["default", false]
+    },
+    {
+      "id": 2,
+      "type": "ImageIterator",
+      "pos": [320, 100],
+      "size": {"0": 260, "1": 122},
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {"name": "global_run", "type": "INT", "link": 1, "slot_index": 0}
+      ],
+      "outputs": [
+        {"name": "IMAGE",        "type": "IMAGE",  "links": [4],  "slot_index": 0},
+        {"name": "MASK",         "type": "MASK",   "links": [],   "slot_index": 1},
+        {"name": "image_path",   "type": "STRING", "links": [],   "slot_index": 2},
+        {"name": "file_index",   "type": "INT",    "links": [],   "slot_index": 3},
+        {"name": "images_found", "type": "INT",    "links": [],   "slot_index": 4},
+        {"name": "step_size",    "type": "INT",    "links": [3],  "slot_index": 5}
+      ],
+      "properties": {"Node name for S&R": "ImageIterator"},
+      "widgets_values": ["D:/subjects", 1]
+    },
+    {
+      "id": 3,
+      "type": "PromptIterator",
+      "pos": [320, 420],
+      "size": {"0": 260, "1": 122},
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {"name": "global_run",  "type": "INT", "link": 2, "slot_index": 0},
+        {"name": "cycle_every", "type": "INT", "link": 3, "slot_index": 1}
+      ],
+      "outputs": [
+        {"name": "prompt_text",   "type": "STRING", "links": [5],  "slot_index": 0},
+        {"name": "file_index",    "type": "INT",    "links": [],   "slot_index": 1},
+        {"name": "prompts_found", "type": "INT",    "links": [],   "slot_index": 2},
+        {"name": "step_size",     "type": "INT",    "links": [],   "slot_index": 3}
+      ],
+      "properties": {"Node name for S&R": "PromptIterator"},
+      "widgets_values": ["D:/prompts"]
+    },
+    {
+      "id": 4,
+      "type": "CheckpointLoaderSimple",
+      "pos": [320, 620],
+      "size": {"0": 260, "1": 82},
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "MODEL", "type": "MODEL", "links": [9],     "slot_index": 0},
+        {"name": "CLIP",  "type": "CLIP",  "links": [6, 7],  "slot_index": 1},
+        {"name": "VAE",   "type": "VAE",   "links": [8, 10], "slot_index": 2}
+      ],
+      "properties": {"Node name for S&R": "CheckpointLoaderSimple"},
+      "widgets_values": ["v1-5-pruned-emaonly.safetensors"]
+    },
+    {
+      "id": 5,
+      "type": "VAEEncode",
+      "pos": [650, 100],
+      "size": {"0": 210, "1": 60},
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {"name": "pixels", "type": "IMAGE", "link": 4,  "slot_index": 0},
+        {"name": "vae",    "type": "VAE",   "link": 8,  "slot_index": 1}
+      ],
+      "outputs": [
+        {"name": "LATENT", "type": "LATENT", "links": [11], "slot_index": 0}
+      ],
+      "properties": {"Node name for S&R": "VAEEncode"},
+      "widgets_values": []
+    },
+    {
+      "id": 6,
+      "type": "CLIPTextEncode",
+      "pos": [650, 320],
+      "size": {"0": 260, "1": 100},
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {"name": "text", "type": "STRING", "link": 5, "slot_index": 0},
+        {"name": "clip", "type": "CLIP",   "link": 6, "slot_index": 1}
+      ],
+      "outputs": [
+        {"name": "CONDITIONING", "type": "CONDITIONING", "links": [12], "slot_index": 0}
+      ],
+      "properties": {"Node name for S&R": "CLIPTextEncode"},
+      "widgets_values": []
+    },
+    {
+      "id": 7,
+      "type": "CLIPTextEncode",
+      "pos": [650, 500],
+      "size": {"0": 260, "1": 100},
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {"name": "clip", "type": "CLIP", "link": 7, "slot_index": 0}
+      ],
+      "outputs": [
+        {"name": "CONDITIONING", "type": "CONDITIONING", "links": [13], "slot_index": 0}
+      ],
+      "properties": {"Node name for S&R": "CLIPTextEncode"},
+      "widgets_values": ["low quality, blurry, bad anatomy, watermark, text"]
+    },
+    {
+      "id": 8,
+      "type": "KSampler",
+      "pos": [980, 280],
+      "size": {"0": 260, "1": 262},
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {"name": "model",        "type": "MODEL",        "link": 9,  "slot_index": 0},
+        {"name": "positive",     "type": "CONDITIONING", "link": 12, "slot_index": 1},
+        {"name": "negative",     "type": "CONDITIONING", "link": 13, "slot_index": 2},
+        {"name": "latent_image", "type": "LATENT",       "link": 11, "slot_index": 3}
+      ],
+      "outputs": [
+        {"name": "LATENT", "type": "LATENT", "links": [14], "slot_index": 0}
+      ],
+      "properties": {"Node name for S&R": "KSampler"},
+      "widgets_values": [42, "fixed", 20, 7.0, "euler", "karras", 0.75]
+    },
+    {
+      "id": 9,
+      "type": "VAEDecode",
+      "pos": [1300, 280],
+      "size": {"0": 210, "1": 60},
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {"name": "samples", "type": "LATENT", "link": 14, "slot_index": 0},
+        {"name": "vae",     "type": "VAE",    "link": 10, "slot_index": 1}
+      ],
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [15], "slot_index": 0}
+      ],
+      "properties": {"Node name for S&R": "VAEDecode"},
+      "widgets_values": []
+    },
+    {
+      "id": 10,
+      "type": "SaveImage",
+      "pos": [1570, 280],
+      "size": {"0": 210, "1": 60},
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {"name": "images", "type": "IMAGE", "link": 15, "slot_index": 0}
+      ],
+      "outputs": [],
+      "properties": {"Node name for S&R": "SaveImage"},
+      "widgets_values": ["iterator/img2img_"]
+    }
+  ],
+  "links": [
+    [1,  1, 0,  2, 0, "INT"],
+    [2,  1, 0,  3, 0, "INT"],
+    [3,  2, 5,  3, 1, "INT"],
+    [4,  2, 0,  5, 0, "IMAGE"],
+    [5,  3, 0,  6, 0, "STRING"],
+    [6,  4, 1,  6, 1, "CLIP"],
+    [7,  4, 1,  7, 0, "CLIP"],
+    [8,  4, 2,  5, 1, "VAE"],
+    [9,  4, 0,  8, 0, "MODEL"],
+    [10, 4, 2,  9, 1, "VAE"],
+    [11, 5, 0,  8, 3, "LATENT"],
+    [12, 6, 0,  8, 1, "CONDITIONING"],
+    [13, 7, 0,  8, 2, "CONDITIONING"],
+    [14, 8, 0,  9, 0, "LATENT"],
+    [15, 9, 0, 10, 0, "IMAGE"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {"ds": {"scale": 0.75, "offset": [0, 0]}},
+  "version": 0.4
+}

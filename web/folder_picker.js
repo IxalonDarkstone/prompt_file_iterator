@@ -4,7 +4,8 @@ app.registerExtension({
     name: "IteratorSuite.FolderPicker",
 
     async beforeRegisterNodeDef(nodeType, nodeData) {
-        if (nodeData.name !== "FolderIterator") return;
+        const FOLDER_NODES = new Set(["PromptIterator", "ImageIterator"]);
+        if (!FOLDER_NODES.has(nodeData.name)) return;
 
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = function () {

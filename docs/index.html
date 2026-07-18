@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ComfyUI Iterator Suite — Usage Guide</title>
+<style>
+:root {
+  --bg:         #141414;
+  --bg-card:    #1c1c1c;
+  --bg-node:    #252525;
+  --bg-node2:   #2a2a2a;
+  --border:     #333;
+  --accent:     #4a9eff;
+  --accent2:    #7ec8e3;
+  --green:      #56c271;
+  --orange:     #e8943a;
+  --purple:     #a87de8;
+  --red:        #e05252;
+  --text:       #d0d0d0;
+  --text-dim:   #888;
+  --text-head:  #f0f0f0;
+  --conn-int:   #5599ff;
+  --conn-str:   #55cc88;
+  --conn-img:   #ff9944;
+  --conn-cond:  #cc88ff;
+  --conn-model: #ff6677;
+  --conn-clip:  #ffcc44;
+  --conn-vae:   #44ddcc;
+  --conn-lat:   #ff88cc;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Layout ── */
+.page { max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+header { border-bottom: 1px solid var(--border); padding-bottom: 28px; margin-bottom: 40px; }
+header h1 { font-size: 28px; color: var(--text-head); font-weight: 700; margin-bottom: 6px; }
+header p  { color: var(--text-dim); font-size: 15px; }
+.badge {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: 11px; font-weight: 600; letter-spacing: .5px;
+  background: var(--accent); color: #000; margin-left: 10px; vertical-align: middle;
+}
+
+h2 { font-size: 20px; color: var(--text-head); font-weight: 600;
+     border-bottom: 1px solid var(--border); padding-bottom: 8px; margin: 48px 0 20px; }
+h3 { font-size: 15px; color: var(--accent2); font-weight: 600; margin: 28px 0 10px; }
+h4 { font-size: 13px; color: var(--text-dim); font-weight: 600;
+     text-transform: uppercase; letter-spacing: .6px; margin: 16px 0 8px; }
+p  { margin-bottom: 14px; }
+ul, ol { padding-left: 22px; margin-bottom: 14px; }
+li { margin-bottom: 6px; }
+code {
+  background: #282828; border: 1px solid #3a3a3a; border-radius: 4px;
+  padding: 1px 6px; font-family: "Cascadia Code", "Fira Code", monospace;
+  font-size: 12.5px; color: #d4a;
+}
+.note {
+  background: #1a2030; border: 1px solid #2a4070; border-left: 3px solid var(--accent);
+  border-radius: 4px; padding: 12px 16px; margin: 16px 0; font-size: 13px;
+}
+.warn {
+  background: #201a14; border: 1px solid #4a3010; border-left: 3px solid var(--orange);
+  border-radius: 4px; padding: 12px 16px; margin: 16px 0; font-size: 13px;
+}
+
+/* ── Node diagrams ── */
+.flow {
+  display: flex; align-items: flex-start; gap: 0;
+  overflow-x: auto; padding: 24px 0 8px; margin: 20px 0;
+}
+.flow-col { display: flex; flex-direction: column; gap: 12px; }
+.flow-arrow {
+  display: flex; align-items: center; padding: 0 6px;
+  color: var(--text-dim); font-size: 18px; align-self: center;
+  white-space: nowrap;
+}
+.flow-arrow.down { flex-direction: column; font-size: 14px; padding: 4px 0; }
+
+.node {
+  background: var(--bg-node); border: 1px solid #3a3a3a; border-radius: 6px;
+  min-width: 180px; overflow: hidden; font-size: 12px;
+}
+.node-title {
+  background: #1a1a2e; border-bottom: 1px solid #3a3a3a;
+  padding: 6px 10px; font-weight: 600; font-size: 12px; color: var(--text-head);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.node-title .cat { font-size: 10px; color: var(--text-dim); font-weight: 400; }
+.node-body { padding: 8px 10px; display: flex; gap: 16px; }
+.node-inputs, .node-outputs { flex: 1; }
+.node-inputs { text-align: left; }
+.node-outputs { text-align: right; }
+.pin {
+  display: flex; align-items: center; gap: 5px;
+  padding: 2px 0; font-size: 11px; color: var(--text-dim);
+}
+.node-outputs .pin { justify-content: flex-end; }
+.dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.dot-int   { background: var(--conn-int); }
+.dot-str   { background: var(--conn-str); }
+.dot-img   { background: var(--conn-img); }
+.dot-cond  { background: var(--conn-cond); }
+.dot-model { background: var(--conn-model); }
+.dot-clip  { background: var(--conn-clip); }
+.dot-vae   { background: var(--conn-vae); }
+.dot-lat   { background: var(--conn-lat); }
+.dot-mask  { background: #aaa; }
+.pin.active { color: var(--text); }
+
+.connector-row {
+  display: flex; align-items: center; gap: 0;
+  font-size: 11px; color: var(--text-dim); margin: 4px 0;
+}
+.wire { border-top: 1px dashed; flex: 1; margin: 0 4px; }
+.wire-int   { border-color: var(--conn-int); }
+.wire-str   { border-color: var(--conn-str); }
+.wire-img   { border-color: var(--conn-img); }
+.wire-cond  { border-color: var(--conn-cond); }
+.wire-model { border-color: var(--conn-model); }
+.wire-clip  { border-color: var(--conn-clip); }
+.wire-vae   { border-color: var(--conn-vae); }
+.wire-lat   { border-color: var(--conn-lat); }
+
+/* ── Tables ── */
+table {
+  width: 100%; border-collapse: collapse; margin: 12px 0 20px;
+  font-size: 13px;
+}
+th {
+  text-align: left; padding: 8px 12px;
+  background: #1e1e1e; color: var(--text-dim);
+  font-weight: 600; font-size: 11px; text-transform: uppercase;
+  letter-spacing: .5px; border-bottom: 1px solid var(--border);
+}
+td {
+  padding: 8px 12px; border-bottom: 1px solid #222;
+  vertical-align: top;
+}
+tr:hover td { background: #1e1e1e; }
+.type-tag {
+  display: inline-block; padding: 1px 7px; border-radius: 10px;
+  font-size: 11px; font-weight: 600;
+}
+.t-int   { background: #1a2a44; color: var(--conn-int); }
+.t-str   { background: #1a3028; color: var(--conn-str); }
+.t-img   { background: #3a2510; color: var(--conn-img); }
+.t-cond  { background: #2a1a44; color: var(--conn-cond); }
+.t-model { background: #3a1a1a; color: var(--conn-model); }
+.t-clip  { background: #3a3010; color: var(--conn-clip); }
+.t-vae   { background: #0a3030; color: var(--conn-vae); }
+.t-lat   { background: #3a1a30; color: var(--conn-lat); }
+.t-bool  { background: #2a2a2a; color: #aaa; }
+.t-float { background: #1a2a1a; color: #88cc88; }
+
+/* ── Download cards ── */
+.wf-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px,1fr)); gap: 16px; margin: 20px 0; }
+.wf-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 20px;
+}
+.wf-card h3 { margin: 0 0 8px; color: var(--text-head); font-size: 14px; }
+.wf-card p  { color: var(--text-dim); font-size: 12px; margin: 0 0 16px; }
+.wf-card .wf-meta { font-size: 11px; color: var(--text-dim); margin-bottom: 14px; }
+.wf-card .wf-meta span { display: inline-block; margin-right: 12px; }
+.btn {
+  display: inline-block; padding: 7px 16px; border-radius: 5px;
+  background: var(--accent); color: #000; font-weight: 600;
+  font-size: 12px; cursor: pointer; text-decoration: none;
+}
+.btn:hover { background: var(--accent2); text-decoration: none; }
+.btn-outline {
+  background: transparent; border: 1px solid var(--accent);
+  color: var(--accent); margin-left: 8px;
+}
+.btn-outline:hover { background: var(--accent); color: #000; }
+
+/* ── Step list ── */
+.steps { counter-reset: step; list-style: none; padding: 0; }
+.steps li {
+  counter-increment: step;
+  padding: 14px 16px 14px 52px;
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+.steps li::before {
+  content: counter(step);
+  position: absolute; left: 16px; top: 14px;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--accent); color: #000;
+  font-weight: 700; font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── Legend ── */
+.legend {
+  display: flex; flex-wrap: wrap; gap: 12px;
+  margin: 12px 0 20px; font-size: 11px; color: var(--text-dim);
+}
+.legend-item { display: flex; align-items: center; gap: 5px; }
+
+/* ── toc ── */
+.toc {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 20px 24px; margin-bottom: 40px;
+  display: inline-block; min-width: 260px;
+}
+.toc h4 { margin: 0 0 10px; }
+.toc ol { margin: 0; padding-left: 18px; }
+.toc li { margin-bottom: 4px; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ═══════════════════════ HEADER ═══════════════════════ -->
+<header>
+  <h1>ComfyUI Iterator Suite <span class="badge">v0.3</span></h1>
+  <p>Automated multi-dimensional iteration over images, prompts, checkpoints, and LoRAs — no manual reconfiguration between runs.</p>
+</header>
+
+<!-- ═══════════════════════ TOC ═══════════════════════ -->
+<div class="toc">
+  <h4>Contents</h4>
+  <ol>
+    <li><a href="#concept">How it works</a></li>
+    <li><a href="#install">Installation</a></li>
+    <li><a href="#wf1">Workflow 1 — Prompts × Checkpoints</a></li>
+    <li><a href="#wf2">Workflow 2 — Images × Prompts (img2img)</a></li>
+    <li><a href="#wf3">Workflow 3 — Prompts × LoRAs</a></li>
+    <li><a href="#nodes">Node Reference</a></li>
+    <li><a href="#tips">Tips &amp; Patterns</a></li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════ CONCEPT ═══════════════════════ -->
+<h2 id="concept">How it works</h2>
+
+<p>Every iterator node reads from a single counter — the <strong>global_run</strong> output of an <strong>Iteration Controller</strong>. Each time you queue a generation, the counter advances by one. Each iterator uses that counter to decide which file or model to pick, making every run a unique combination.</p>
+
+<p>The key to controlling <em>which dimension cycles fastest</em> is two values that every iterator passes along:</p>
+
+<table>
+  <tr><th>Value</th><th>Meaning</th><th>How to use it</th></tr>
+  <tr>
+    <td><code>cycle_every</code></td>
+    <td>How many global runs before this iterator advances to the next item</td>
+    <td>Leave at <strong>1</strong> for the fastest (innermost) iterator. Wire <code>step_size</code> from a faster iterator here to make this one slower.</td>
+  </tr>
+  <tr>
+    <td><code>step_size</code> (output)</td>
+    <td><code>cycle_every × files_found</code> — the combined size of this dimension and everything inside it</td>
+    <td>Wire into <code>cycle_every</code> of the next (slower) iterator. The <em>last</em> iterator's <code>step_size</code> = total runs needed.</td>
+  </tr>
+</table>
+
+<p><strong>Example:</strong> 3 subject images (fast) × 4 prompts (slow) = 12 total runs.</p>
+
+<div class="flow">
+  <div class="flow-col">
+    <div class="node">
+      <div class="node-title">Iteration Controller <span class="cat">Iterators</span></div>
+      <div class="node-body">
+        <div class="node-inputs"><div class="pin"><div class="dot dot-bool"></div>session_name</div></div>
+        <div class="node-outputs"><div class="pin active">global_run <div class="dot dot-int"></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-arrow">→</div>
+
+  <div class="flow-col">
+    <div class="node">
+      <div class="node-title">Image Iterator <span class="cat">Iterators</span></div>
+      <div class="node-body">
+        <div class="node-inputs">
+          <div class="pin active"><div class="dot dot-int"></div>global_run</div>
+          <div class="pin"><div class="dot dot-int"></div>cycle_every = 1</div>
+        </div>
+        <div class="node-outputs">
+          <div class="pin active">IMAGE <div class="dot dot-img"></div></div>
+          <div class="pin active">images_found = 3 <div class="dot dot-int"></div></div>
+          <div class="pin active">step_size = 3 <div class="dot dot-int"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="node">
+      <div class="node-title">Prompt Iterator <span class="cat">Iterators</span></div>
+      <div class="node-body">
+        <div class="node-inputs">
+          <div class="pin active"><div class="dot dot-int"></div>global_run</div>
+          <div class="pin active"><div class="dot dot-int"></div>cycle_every ← 3</div>
+        </div>
+        <div class="node-outputs">
+          <div class="pin active">prompt_text <div class="dot dot-str"></div></div>
+          <div class="pin active">prompts_found = 4 <div class="dot dot-int"></div></div>
+          <div class="pin active">step_size = <strong>12</strong> <div class="dot dot-int"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-arrow">→</div>
+
+  <div class="flow-col">
+    <div class="node" style="min-width:140px">
+      <div class="node-title">KSampler <span class="cat">sampling</span></div>
+      <div class="node-body">
+        <div class="node-inputs">
+          <div class="pin active"><div class="dot dot-img"></div>image</div>
+          <div class="pin active"><div class="dot dot-str"></div>prompt</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p>Queue <strong>12</strong> times. Runs 0–2 use image 0 with each of the 3 subjects; runs 3–5 use the same subjects with prompt 1; and so on. To flip the order (all prompts per subject instead), swap which iterator is inner and which is outer.</p>
+
+<!-- ═══════════════════════ INSTALL ═══════════════════════ -->
+<h2 id="install">Installation</h2>
+
+<ol class="steps">
+  <li>Clone or copy the <code>prompt_file_iterator</code> folder into your <code>ComfyUI/custom_nodes/</code> directory.</li>
+  <li>Restart ComfyUI. The new nodes appear under the <strong>Iterators</strong> category in the node menu.</li>
+  <li>Prepare your content folders — one folder of <code>.txt</code> prompt files, one folder of subject images, etc.</li>
+</ol>
+
+<div class="note">All nodes in this pack are found under <strong>Add Node → Iterators</strong>. The original <em>Prompt File Iterator</em> node (legacy) remains under <em>Prompt Iterator</em>.</div>
+
+<!-- ═══════════════════════ DOWNLOAD CARDS ═══════════════════════ -->
+<h2>Example Workflows</h2>
+<p>Download any workflow JSON and drag it into ComfyUI, or use <strong>Load</strong> from the menu. Update the folder paths in the directory widgets before running.</p>
+
+<div class="wf-grid">
+  <div class="wf-card">
+    <h3>Workflow 1 — Prompts × Checkpoints</h3>
+    <p>txt2img — runs every prompt against every selected checkpoint. Fast: prompts. Slow: checkpoints.</p>
+    <div class="wf-meta">
+      <span>📄 PromptIterator</span>
+      <span>🤖 CheckpointIterator</span>
+    </div>
+    <a class="btn" href="workflow_1_prompt_checkpoint.json" download>⬇ Download JSON</a>
+  </div>
+  <div class="wf-card">
+    <h3>Workflow 2 — Images × Prompts</h3>
+    <p>img2img — applies every prompt to every subject image. Fast: images. Slow: prompts. Uses a fixed checkpoint.</p>
+    <div class="wf-meta">
+      <span>🖼 ImageIterator</span>
+      <span>📄 PromptIterator</span>
+    </div>
+    <a class="btn" href="workflow_2_image_prompt.json" download>⬇ Download JSON</a>
+  </div>
+  <div class="wf-card">
+    <h3>Workflow 3 — Prompts × LoRAs</h3>
+    <p>txt2img — runs every prompt with every selected LoRA. Fast: prompts. Slow: LoRAs. Uses a fixed checkpoint.</p>
+    <div class="wf-meta">
+      <span>📄 PromptIterator</span>
+      <span>🎨 LoraIterator</span>
+    </div>
+    <a class="btn" href="workflow_3_prompt_lora.json" download>⬇ Download JSON</a>
+  </div>
+</div>
+
+<!-- ═══════════════════════ WF1 ═══════════════════════ -->
+<h2 id="wf1">Workflow 1 — Prompts × Checkpoints (txt2img)</h2>
+
+<p>Use this to test how different checkpoints handle the same set of prompts, without touching the workflow between runs.</p>
+
+<h3>What you need</h3>
+<ul>
+  <li>A folder of <code>.txt</code> files — one prompt per file (e.g. <code>D:\prompts\</code>)</li>
+  <li>Two or more checkpoints installed in ComfyUI</li>
+</ul>
+
+<h3>Setup steps</h3>
+<ol class="steps">
+  <li>Open the workflow. Set the <strong>Prompt Iterator</strong> <code>directory</code> to your prompts folder using the Browse button.</li>
+  <li>Open <strong>Checkpoint Iterator</strong>. Click <strong>+ Add Checkpoint</strong> for each model you want to test and select from the dropdowns.</li>
+  <li>Adjust <strong>KSampler</strong> settings (seed, steps, CFG) as desired.</li>
+  <li>Check the <code>step_size</code> output of the <em>last</em> iterator (Checkpoint Iterator) — this is your total run count. Queue that many times.</li>
+</ol>
+
+<h3>Node wiring</h3>
+
+<div class="flow" style="flex-wrap:wrap; gap:8px;">
+  <div class="node">
+    <div class="node-title">Iteration Controller</div>
+    <div class="node-body">
+      <div class="node-inputs"></div>
+      <div class="node-outputs"><div class="pin active">global_run <div class="dot dot-int"></div></div></div>
+    </div>
+  </div>
+  <div class="flow-col" style="align-items:center; justify-content:center; gap:4px; font-size:11px; color:var(--conn-int)">
+    <span>↘ INT</span><span>↘ INT</span>
+  </div>
+  <div class="flow-col" style="gap:8px;">
+    <div class="node">
+      <div class="node-title">Prompt Iterator</div>
+      <div class="node-body">
+        <div class="node-inputs">
+          <div class="pin active"><div class="dot dot-int"></div>global_run</div>
+          <div class="pin"><div class="dot dot-int"></div>cycle_every = 1</div>
+        </div>
+        <div class="node-outputs">
+          <div class="pin active">prompt_text <div class="dot dot-str"></div></div>
+          <div class="pin active">step_size → <div class="dot dot-int"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="node">
+      <div class="node-title">Checkpoint Iterator</div>
+      <div class="node-body">
+        <div class="node-inputs">
+          <div class="pin active"><div class="dot dot-int"></div>global_run</div>
+          <div class="pin active"><div class="dot dot-int"></div>cycle_every ← step_size</div>
+        </div>
+        <div class="node-outputs">
+          <div class="pin active">model_name <div class="dot dot-str"></div></div>
+          <div class="pin active">step_size = total runs <div class="dot dot-int"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-col" style="gap:8px;">
+    <div class="node">
+      <div class="node-title">Checkpoint Loader (from String)</div>
+      <div class="node-body">
+        <div class="node-inputs"><div class="pin active"><div class="dot dot-str"></div>model_name</div></div>
+        <div class="node-outputs">
+          <div class="pin active">MODEL <div class="dot dot-model"></div></div>
+          <div class="pin active">CLIP <div class="dot dot-clip"></div></div>
+          <div class="pin active">VAE <div class="dot dot-vae"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="node">
+      <div class="node-title">CLIP Text Encode (+)</div>
+      <div class="node-body">
+        <div class="node-inputs">
+          <div class="pin active"><div class="dot dot-str"></div>text ← prompt_text</div>
+          <div class="pin active"><div class="dot dot-clip"></div>clip</div>
+        </div>
+        <div class="node-outputs"><div class="pin active">CONDITIONING <div class="dot dot-cond"></div></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-col" style="gap:8px;">
+    <div class="node">
+      <div class="node-title">KSampler</div>
+      <div class="node-body">
+        <div class="node-inputs">
+          <div class="pin active"><div class="dot dot-model"></div>model</div>
+          <div class="pin active"><div class="dot dot-cond"></div>positive</div>
+          <div class="pin active"><div class="dot dot-cond"></div>negative</div>
+          <div class="pin active"><div class="dot dot-lat"></div>latent</div>
+        </div>
+        <div class="node-outputs"><div class="pin active">LATENT <div class="dot dot-lat"></div></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="flow-arrow">→</div>
+  <div class="node">
+    <div class="node-title">VAE Decode → Save</div>
+    <div class="node-body">
+      <div class="node-inputs">
+        <div class="pin active"><div class="dot dot-lat"></div>samples</div>
+        <div class="pin active"><div class="dot dot-vae"></div>vae</div>
+      </div>
+      <div class="node-outputs"><div class="pin active">IMAGE <div class="dot dot-img"></div></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="note"><strong>Tip:</strong> The <em>Checkpoint Loader (from String)</em> node is the bridge between CheckpointIterator's STRING output and the MODEL/CLIP/VAE connections the rest of the workflow needs. It loads whichever checkpoint name it receives each run.</div>
+
+<!-- ═══════════════════════ WF2 ═══════════════════════ -->
+<h2 id="wf2">Workflow 2 — Images × Prompts (img2img)</h2>
+
+<p>Use this to apply a set of creative prompts to a collection of subject images — for example, testing style variations on reference photos.</p>
+
+<h3>What you need</h3>
+<ul>
+  <li>A folder of subject images (png/jpg/webp etc.) — e.g. <code>D:\subjects\</code></li>
+  <li>A folder of <code>.txt</code> prompt files — e.g. <code>D:\prompts\</code></li>
+  <li>One checkpoint loaded statically via a standard CheckpointLoaderSimple node</li>
+</ul>
+
+<h3>Setup steps</h3>
+<ol class="steps">
+  <li>Set <strong>Image Iterator</strong> directory to your subjects folder. Set <code>cycle_every = 1</code> (images are the fast dimension).</li>
+  <li>Set <strong>Prompt Iterator</strong> directory to your prompts folder. Wire <strong>Image Iterator → step_size</strong> into <strong>Prompt Iterator → cycle_every</strong>.</li>
+  <li>Set <strong>KSampler</strong> <code>denoise</code> to 0.6–0.8 for img2img strength.</li>
+  <li>The Prompt Iterator's <code>step_size</code> = total runs (images × prompts). Queue that many times.</li>
+</ol>
+
+<h3>Key difference from Workflow 1</h3>
+<p>The <strong>Image Iterator</strong> outputs a real <code>IMAGE</code> tensor — wire it directly into <strong>VAE Encode → pixels</strong>. The encoded latent feeds into KSampler as the starting point, making this a true img2img workflow.</p>
+
+<div class="note"><strong>Dimension order matters.</strong> With images as the fast (inner) dimension, runs 0–N cycle through all subjects with prompt 0. Then runs N+1 to 2N cycle through all subjects again with prompt 1. To reverse (all prompts per image), swap which iterator has <code>cycle_every=1</code>.</div>
+
+<!-- ═══════════════════════ WF3 ═══════════════════════ -->
+<h2 id="wf3">Workflow 3 — Prompts × LoRAs (txt2img)</h2>
+
+<p>Use this to benchmark a set of LoRAs across a fixed prompt set — useful for picking which style LoRA works best with a given subject or concept.</p>
+
+<h3>What you need</h3>
+<ul>
+  <li>A folder of <code>.txt</code> prompt files</li>
+  <li>Two or more LoRAs installed in ComfyUI (selected via the LoRA Iterator's <strong>+ Add LoRA</strong> button)</li>
+  <li>One checkpoint loaded statically</li>
+</ul>
+
+<h3>Setup steps</h3>
+<ol class="steps">
+  <li>Set <strong>Prompt Iterator</strong> directory and leave <code>cycle_every = 1</code> (prompts are fast).</li>
+  <li>Open <strong>LoRA Iterator</strong>. Click <strong>+ Add LoRA</strong> for each LoRA to test.</li>
+  <li>Wire <strong>Prompt Iterator → step_size</strong> into <strong>LoRA Iterator → cycle_every</strong>.</li>
+  <li>Wire <strong>LoRA Iterator → lora_name</strong> into <strong>LoRA Loader (from String) → lora_name</strong>.</li>
+  <li>Wire the static <strong>CheckpointLoaderSimple</strong> MODEL and CLIP into <strong>LoRA Loader (from String)</strong> — its patched model and clip feed the rest of the workflow.</li>
+  <li>Queue <strong>LoRA Iterator → step_size</strong> times.</li>
+</ol>
+
+<div class="note"><strong>LoRA Loader (from String)</strong> works the same as ComfyUI's built-in LoraLoader, but accepts a STRING for the name rather than a dropdown — making it compatible with LoRA Iterator's output.</div>
+
+<!-- ═══════════════════════ NODE REFERENCE ═══════════════════════ -->
+<h2 id="nodes">Node Reference</h2>
+
+<div class="legend">
+  <div class="legend-item"><span class="dot dot-int" style="width:10px;height:10px;border-radius:50%;display:inline-block"></span> INT</div>
+  <div class="legend-item"><span class="dot dot-str" style="width:10px;height:10px;border-radius:50%;display:inline-block"></span> STRING</div>
+  <div class="legend-item"><span class="dot dot-img" style="width:10px;height:10px;border-radius:50%;display:inline-block"></span> IMAGE</div>
+  <div class="legend-item"><span class="dot dot-mask" style="width:10px;height:10px;border-radius:50%;display:inline-block"></span> MASK</div>
+  <div class="legend-item"><span class="dot dot-model" style="width:10px;height:10px;border-radius:50%;display:inline-block"></span> MODEL</div>
+  <div class="legend-item"><span class="dot dot-clip" style="width:10px;height:10px;border-radius:50%;display:inline-block"></span> CLIP</div>
+  <div class="legend-item"><span class="dot dot-vae" style="width:10px;height:10px;border-radius:50%;display:inline-block"></span> VAE</div>
+  <div class="legend-item"><span class="dot dot-cond" style="width:10px;height:10px;border-radius:50%;display:inline-block"></span> CONDITIONING</div>
+  <div class="legend-item"><span class="dot dot-lat" style="width:10px;height:10px;border-radius:50%;display:inline-block"></span> LATENT</div>
+</div>
+
+<!-- Iteration Controller -->
+<h3>Iteration Controller</h3>
+<table>
+  <tr><th>Direction</th><th>Name</th><th>Type</th><th>Description</th></tr>
+  <tr><td>In</td><td>session_name</td><td><span class="type-tag t-str">STRING</span></td><td>Namespaces the counter. Use a unique value per independent workflow to avoid counter collisions.</td></tr>
+  <tr><td>In</td><td>reset</td><td><span class="type-tag t-bool">BOOL</span></td><td>Set to true to reset the counter to 0. Flip back to false to resume from 0.</td></tr>
+  <tr><td>Out</td><td>global_run</td><td><span class="type-tag t-int">INT</span></td><td>Current run index (0-based, pre-increment). Wire to every iterator in the workflow.</td></tr>
+</table>
+
+<!-- Image Iterator -->
+<h3>Image Iterator</h3>
+<p>Scans a folder for image files (png, jpg, jpeg, webp, gif, bmp, tiff) and loads one per run. Outputs a real IMAGE tensor — plug directly into VAEEncode, PreviewImage, etc.</p>
+<table>
+  <tr><th>Direction</th><th>Name</th><th>Type</th><th>Description</th></tr>
+  <tr><td>In</td><td>directory</td><td><span class="type-tag t-str">STRING</span></td><td>Path to folder. Use the <strong>📁 Browse</strong> button to navigate.</td></tr>
+  <tr><td>In</td><td>global_run</td><td><span class="type-tag t-int">INT</span></td><td>Wire from Iteration Controller.</td></tr>
+  <tr><td>In</td><td>cycle_every</td><td><span class="type-tag t-int">INT</span></td><td>Use 1 for the fastest iterator; wire <code>step_size</code> from a faster iterator here to slow this one down.</td></tr>
+  <tr><td>Out</td><td>IMAGE</td><td><span class="type-tag t-img">IMAGE</span></td><td>Loaded image tensor. Wire into VAEEncode.pixels, PreviewImage, etc.</td></tr>
+  <tr><td>Out</td><td>MASK</td><td><span class="type-tag t-bool">MASK</span></td><td>Alpha mask (zeros when image has no transparency).</td></tr>
+  <tr><td>Out</td><td>image_path</td><td><span class="type-tag t-str">STRING</span></td><td>Full path to the current file. Useful for labelling saved images.</td></tr>
+  <tr><td>Out</td><td>file_index</td><td><span class="type-tag t-int">INT</span></td><td>0-based index of the selected file.</td></tr>
+  <tr><td>Out</td><td>images_found</td><td><span class="type-tag t-int">INT</span></td><td>Total images discovered in the folder.</td></tr>
+  <tr><td>Out</td><td>step_size</td><td><span class="type-tag t-int">INT</span></td><td><code>cycle_every × images_found</code>. Wire into the next (slower) iterator's <code>cycle_every</code>.</td></tr>
+</table>
+
+<!-- Prompt Iterator -->
+<h3>Prompt Iterator</h3>
+<p>Scans a folder for <code>.txt</code> files and reads one per run. Each file should contain one prompt.</p>
+<table>
+  <tr><th>Direction</th><th>Name</th><th>Type</th><th>Description</th></tr>
+  <tr><td>In</td><td>directory</td><td><span class="type-tag t-str">STRING</span></td><td>Path to folder of .txt files. Use the Browse button.</td></tr>
+  <tr><td>In</td><td>global_run</td><td><span class="type-tag t-int">INT</span></td><td>Wire from Iteration Controller.</td></tr>
+  <tr><td>In</td><td>cycle_every</td><td><span class="type-tag t-int">INT</span></td><td>Same role as in Image Iterator.</td></tr>
+  <tr><td>Out</td><td>prompt_text</td><td><span class="type-tag t-str">STRING</span></td><td>Contents of the selected .txt file. Wire into CLIP Text Encode.</td></tr>
+  <tr><td>Out</td><td>file_index</td><td><span class="type-tag t-int">INT</span></td><td>0-based index of the selected file.</td></tr>
+  <tr><td>Out</td><td>prompts_found</td><td><span class="type-tag t-int">INT</span></td><td>Total .txt files in the folder.</td></tr>
+  <tr><td>Out</td><td>step_size</td><td><span class="type-tag t-int">INT</span></td><td>Wire into the next slower iterator's <code>cycle_every</code>.</td></tr>
+</table>
+
+<!-- Checkpoint Iterator -->
+<h3>Checkpoint Iterator</h3>
+<p>Iterates over a user-selected list of checkpoints. Click <strong>+ Add Checkpoint</strong> to add slots; click <strong>✕</strong> to remove. Leaving all slots empty iterates over all available checkpoints.</p>
+<table>
+  <tr><th>Direction</th><th>Name</th><th>Type</th><th>Description</th></tr>
+  <tr><td>In</td><td>global_run</td><td><span class="type-tag t-int">INT</span></td><td>Wire from Iteration Controller.</td></tr>
+  <tr><td>In</td><td>cycle_every</td><td><span class="type-tag t-int">INT</span></td><td>Same role as in Image Iterator.</td></tr>
+  <tr><td>Out</td><td>model_name</td><td><span class="type-tag t-str">STRING</span></td><td>Checkpoint filename. Wire into <strong>Checkpoint Loader (from String)</strong>.</td></tr>
+  <tr><td>Out</td><td>file_index</td><td><span class="type-tag t-int">INT</span></td><td>0-based index in the active list.</td></tr>
+  <tr><td>Out</td><td>models_found</td><td><span class="type-tag t-int">INT</span></td><td>Number of checkpoints in the active list.</td></tr>
+  <tr><td>Out</td><td>step_size</td><td><span class="type-tag t-int">INT</span></td><td>Wire into the next slower iterator's <code>cycle_every</code>.</td></tr>
+</table>
+
+<!-- LoRA Iterator -->
+<h3>LoRA Iterator</h3>
+<p>Same behaviour as Checkpoint Iterator but for LoRAs. Wire <code>lora_name</code> into <strong>LoRA Loader (from String)</strong>.</p>
+<table>
+  <tr><th>Direction</th><th>Name</th><th>Type</th><th>Description</th></tr>
+  <tr><td>Out</td><td>lora_name</td><td><span class="type-tag t-str">STRING</span></td><td>LoRA filename. Wire into LoRA Loader (from String).</td></tr>
+  <tr><td>Out</td><td>loras_found</td><td><span class="type-tag t-int">INT</span></td><td>Number of LoRAs in the active list.</td></tr>
+  <tr><td>Out</td><td>step_size</td><td><span class="type-tag t-int">INT</span></td><td>Wire into the next slower iterator's <code>cycle_every</code>.</td></tr>
+</table>
+
+<!-- Loader nodes -->
+<h3>Checkpoint Loader (from String) &amp; LoRA Loader (from String)</h3>
+<p>These bridge the gap between the iterator STRING outputs and ComfyUI's MODEL/CLIP/VAE connections. They are functionally identical to ComfyUI's built-in <em>CheckpointLoaderSimple</em> and <em>LoraLoader</em> nodes — the only difference is they accept a STRING input instead of a COMBO dropdown.</p>
+<table>
+  <tr><th>Node</th><th>Key inputs</th><th>Outputs</th></tr>
+  <tr>
+    <td>Checkpoint Loader (from String)</td>
+    <td><code>model_name</code> STRING (from CheckpointIterator)</td>
+    <td>MODEL, CLIP, VAE</td>
+  </tr>
+  <tr>
+    <td>LoRA Loader (from String)</td>
+    <td><code>model</code>, <code>clip</code> (from checkpoint or chained), <code>lora_name</code> STRING, <code>strength_model</code>, <code>strength_clip</code></td>
+    <td>MODEL, CLIP (patched)</td>
+  </tr>
+</table>
+
+<!-- ═══════════════════════ TIPS ═══════════════════════ -->
+<h2 id="tips">Tips &amp; Patterns</h2>
+
+<h3>How many times should I queue?</h3>
+<p>The outermost (slowest) iterator's <code>step_size</code> output equals the total number of unique combinations. Connect it to a <strong>ShowText</strong> or <strong>Integer Display</strong> node to read the value, then queue that many times. Many third-party extensions also offer a "Queue N times" button.</p>
+
+<h3>Adding a third dimension</h3>
+<p>Chain a third iterator after the second in the same pattern:</p>
+<ul>
+  <li>Iterator A: <code>cycle_every = 1</code> → <code>step_size</code> = A_count</li>
+  <li>Iterator B: <code>cycle_every</code> ← A's step_size → <code>step_size</code> = A_count × B_count</li>
+  <li>Iterator C: <code>cycle_every</code> ← B's step_size → <code>step_size</code> = A × B × C = total runs</li>
+</ul>
+
+<h3>Resetting mid-sequence</h3>
+<p>Set <strong>Iteration Controller → reset = true</strong> and queue once. The counter resets to 0 and the first run regenerates combination 0. Flip <code>reset</code> back to <code>false</code> to continue from there.</p>
+
+<h3>Using multiple independent workflows</h3>
+<p>Give each workflow's Iteration Controller a unique <code>session_name</code>. They maintain separate counters even though they write to the same <code>state.json</code> file.</p>
+
+<h3>Keeping images organised</h3>
+<p>Set <strong>Save Image → filename_prefix</strong> to something like <code>iterator/run_</code>. Use a <strong>String Concatenate</strong> node wired to <code>file_index</code> outputs to embed the current indices in the filename.</p>
+
+<h3>Common patterns at a glance</h3>
+<table>
+  <tr><th>Goal</th><th>Fast (cycle_every=1)</th><th>Slow (receives step_size)</th></tr>
+  <tr><td>All images per prompt</td><td>ImageIterator</td><td>PromptIterator</td></tr>
+  <tr><td>All prompts per image</td><td>PromptIterator</td><td>ImageIterator</td></tr>
+  <tr><td>All checkpoints per prompt</td><td>PromptIterator</td><td>CheckpointIterator</td></tr>
+  <tr><td>All LoRAs per prompt</td><td>PromptIterator</td><td>LoraIterator</td></tr>
+  <tr><td>Full 3D: images × prompts × checkpoints</td><td>ImageIterator</td><td>PromptIterator → CheckpointIterator</td></tr>
+</table>
+
+<div class="warn"><strong>Path separator note (Windows):</strong> Use forward slashes (<code>D:/prompts/</code>) or escaped backslashes in directory paths. Both work in ComfyUI on Windows.</div>
+
+<footer style="margin-top:60px; padding-top:20px; border-top:1px solid var(--border); color:var(--text-dim); font-size:12px;">
+  ComfyUI Iterator Suite — <a href="https://github.com/IxalonDarkstone/prompt_file_iterator">GitHub</a>
+</footer>
+
+</div><!-- .page -->
+</body>
+</html>

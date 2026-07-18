@@ -1,56 +1,54 @@
+import json
 import folder_paths
-
-_NONE = "None"
-_SLOTS = 8
 
 
 class LoraIterator:
     """
     Iterates over a user-selected set of LoRAs.
-    Pick up to 8 LoRAs from the dropdowns; slots left at "None" are skipped.
-    If no slots are selected, all available LoRAs are used.
+    Slots are managed by the JS extension (web/model_selector.js) which
+    serialises selected names into models_json. If no models are selected,
+    all available LoRAs are used.
     Wire lora_name into a LoraLoader node.
-    See FolderIterator docstring for dimension chaining math.
+
+    cycle_every / step_size: see PromptIterator for the chaining pattern.
     """
 
     @classmethod
     def INPUT_TYPES(cls):
-        options = [_NONE] + sorted(folder_paths.get_filename_list("loras"))
-        optional = {f"lora_{i}": (options,) for i in range(1, _SLOTS + 1)}
         return {
             "required": {
-                "global_run": ("INT", {"forceInput": True}),
-                "inner_size": ("INT", {"default": 1, "min": 1, "max": 99999}),
-            },
-            "optional": optional,
+                "global_run":  ("INT",    {"forceInput": True}),
+                "cycle_every": ("INT",    {"default": 1, "min": 1, "max": 99999}),
+                "models_json": ("STRING", {"default": "[]"}),
+            }
         }
 
-    RETURN_TYPES  = ("STRING", "INT", "INT", "INT")
-    RETURN_NAMES  = ("lora_name", "local_index", "total_loras", "outer_size")
+    RETURN_TYPES  = ("STRING",    "INT",        "INT",          "INT")
+    RETURN_NAMES  = ("lora_name", "file_index", "loras_found",  "step_size")
     FUNCTION      = "iterate"
     CATEGORY      = "Iterators"
 
     @classmethod
-    def IS_CHANGED(cls, global_run, inner_size, **kwargs):
+    def IS_CHANGED(cls, global_run, cycle_every, models_json):
         return float("nan")
 
-    def iterate(self, global_run, inner_size, **kwargs):
-        inner_size = max(1, inner_size)
-        selected   = [
-            kwargs[f"lora_{i}"]
-            for i in range(1, _SLOTS + 1)
-            if kwargs.get(f"lora_{i}", _NONE) != _NONE
-        ]
+    def iterate(self, global_run, cycle_every, models_json):
+        cycle_every = max(1, cycle_every)
+        try:
+            selected = [m for m in json.loads(models_json) if m]
+        except Exception:
+            selected = []
+
         if not selected:
             selected = sorted(folder_paths.get_filename_list("loras"))
 
         total = len(selected)
         if total == 0:
-            return ("", 0, 0, inner_size)
+            return ("", 0, 0, cycle_every)
 
-        local_index = (global_run // inner_size) % total
-        outer_size  = inner_size * total
-        return (selected[local_index], local_index, total, outer_size)
+        file_index = (global_run // cycle_every) % total
+        step_size  = cycle_every * total
+        return (selected[file_index], file_index, total, step_size)
 
 
 NODE_CLASS_MAPPINGS        = {"LoraIterator": LoraIterator}
