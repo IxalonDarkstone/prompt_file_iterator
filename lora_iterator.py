@@ -23,9 +23,9 @@ class LoraIterator:
                 "clip":           ("CLIP",),
                 "global_run":     ("INT",   {"forceInput": True}),
                 "cycle_every":    ("INT",   {"default": 1, "min": 1, "max": 99999}),
+                "models_json":    ("STRING", {"default": "[]"}),
                 "strength_model": ("FLOAT", {"default": 1.0, "min": -10.0, "max": 10.0, "step": 0.01}),
                 "strength_clip":  ("FLOAT", {"default": 1.0, "min": -10.0, "max": 10.0, "step": 0.01}),
-                "models_json":    ("STRING", {"default": "[]"}),
             }
         }
 

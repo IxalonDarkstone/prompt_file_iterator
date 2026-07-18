@@ -76,6 +76,9 @@ function registerExtension({ nodeName, modelType, addLabel }) {
 
 function setupNode(node, getOptions, addLabel) {
     hideJsonWidget(node);
+    // Ensure the properties backup key exists so it is always serialized
+    node.properties = node.properties ?? {};
+    node.properties.models_json = node.properties.models_json ?? "[]";
 
     node.addWidget("button", addLabel, ADD_BTN_NAME, () => {
         const opts = getOptions();
@@ -94,10 +97,15 @@ function hideJsonWidget(node) {
 
 function restoreSlots(node, getOptions, addLabel) {
     const jw = jsonWidget(node);
-    if (!jw) return;
+
+    // Prefer the widget value; fall back to the properties backup if the
+    // widget value is empty or was lost during positional widget assignment.
+    const raw = (jw?.value && jw.value.length > 2)
+        ? jw.value
+        : (node.properties?.models_json ?? "[]");
 
     let saved;
-    try { saved = JSON.parse(jw.value ?? "[]"); }
+    try { saved = JSON.parse(raw); }
     catch { return; }
     if (!Array.isArray(saved) || !saved.length) return;
 
@@ -139,11 +147,16 @@ function addSlot(node, getOptions, defaultValue) {
 function syncJson(node) {
     const jw = jsonWidget(node);
     if (!jw) return;
-    jw.value = JSON.stringify(
+    const json = JSON.stringify(
         node.widgets
             .filter(w => w.name?.startsWith(SLOT_PREFIX))
             .map(w => w.value)
     );
+    jw.value = json;
+    // Mirror to node.properties so it survives even if widget serialization
+    // is inconsistent across ComfyUI versions.
+    node.properties = node.properties ?? {};
+    node.properties.models_json = json;
 }
 
 function jsonWidget(node) {

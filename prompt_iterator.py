@@ -21,8 +21,8 @@ class PromptIterator:
             "required": {
                 "directory":   ("STRING", {"default": ""}),
                 "global_run":  ("INT",    {"forceInput": True}),
-                "mode":        (["increment", "fixed"],),
                 "cycle_every": ("INT",    {"default": 1, "min": 1, "max": 99999}),
+                "mode":        (["increment", "fixed"],),
                 "start_index": ("INT",    {"default": 0, "min": 0, "max": 99999}),
             }
         }
