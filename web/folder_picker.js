@@ -113,7 +113,10 @@ function openFolderPicker(startPath, onSelect) {
                 list.appendChild(makeEntry("📁  " + dir.name, () => navigate(dir.path)));
             }
             if (!(data.dirs?.length)) {
-                setList('<div style="padding:8px;color:#888">No subdirectories.</div>');
+                list.appendChild(el("div", {
+                    textContent: "No subdirectories.",
+                    style: css({ padding: "5px 10px", color: "#888" }),
+                }));
             }
         } catch (e) {
             setList(`<div style="padding:8px;color:#f66">Error: ${e.message}</div>`);
