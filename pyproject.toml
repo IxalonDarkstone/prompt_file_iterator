@@ -3,8 +3,8 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.backends.legacy:build"
 
 [project]
-name = "prompt-file-iterator"
-version = "0.1.0"
-description = "ComfyUI custom node that iterates through .txt prompt files in a directory"
+name = "comfyui-iterator-suite"
+version = "0.2.0"
+description = "ComfyUI custom nodes for multi-dimensional iteration over files, checkpoints, and LoRAs"
 requires-python = ">=3.8"
 dependencies = []
