@@ -1,14 +1,14 @@
 import json
 import folder_paths
+import comfy.sd
 
 
 class CheckpointIterator:
     """
-    Iterates over a user-selected set of checkpoints.
-    Slots are managed by the JS extension (web/model_selector.js) which
-    serialises selected names into models_json. If no models are selected,
-    all available checkpoints are used.
-    Wire model_name into a CheckpointLoaderSimple node.
+    Iterates over a user-selected set of checkpoints, loading each one and
+    outputting MODEL/CLIP/VAE directly. Slots are managed by the JS extension
+    (web/model_selector.js) which serialises selected names into models_json.
+    If no models are selected, all available checkpoints are used.
 
     cycle_every / step_size: see PromptIterator for the chaining pattern.
     """
@@ -23,8 +23,8 @@ class CheckpointIterator:
             }
         }
 
-    RETURN_TYPES  = ("STRING",     "INT",        "INT",           "INT")
-    RETURN_NAMES  = ("model_name", "file_index", "models_found",  "step_size")
+    RETURN_TYPES  = ("MODEL",  "CLIP",  "VAE",  "STRING",     "INT",        "INT",          "INT")
+    RETURN_NAMES  = ("model",  "clip",  "vae",  "model_name", "file_index", "models_found", "step_size")
     FUNCTION      = "iterate"
     CATEGORY      = "Iterators"
 
@@ -49,11 +49,26 @@ class CheckpointIterator:
 
         total = len(selected)
         if total == 0:
-            return ("", 0, 0, cycle_every)
+            raise ValueError("CheckpointIterator: no checkpoints found")
 
         file_index = (global_run // cycle_every) % total
         step_size  = cycle_every * total
-        return (selected[file_index], file_index, total, step_size)
+        model_name = selected[file_index]
+
+        ckpt_path = folder_paths.get_full_path("checkpoints", model_name)
+        if ckpt_path is None:
+            ckpt_path = folder_paths.get_full_path("diffusion_models", model_name)
+        if ckpt_path is None:
+            raise ValueError(f"CheckpointIterator: file not found for {model_name!r}")
+
+        out = comfy.sd.load_checkpoint_guess_config(
+            ckpt_path,
+            output_vae=True,
+            output_clip=True,
+            embedding_directory=folder_paths.get_folder_paths("embeddings"),
+        )
+        model, clip, vae = out[0], out[1], out[2]
+        return (model, clip, vae, model_name, file_index, total, step_size)
 
 
 NODE_CLASS_MAPPINGS        = {"CheckpointIterator": CheckpointIterator}
