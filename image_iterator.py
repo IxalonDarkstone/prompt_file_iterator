@@ -70,22 +70,26 @@ class ImageIterator:
         cycle_every = max(1, cycle_every)
         directory   = directory.strip()
 
-        files = []
+        all_files = []
         for ext in IMAGE_EXTENSIONS:
-            files.extend(glob_module.glob(os.path.join(directory, f"*.{ext}")))
-            files.extend(glob_module.glob(os.path.join(directory, f"*.{ext.upper()}")))
-        files = sorted(set(files))
-        total = len(files)
+            all_files.extend(glob_module.glob(os.path.join(directory, f"*.{ext}")))
+            all_files.extend(glob_module.glob(os.path.join(directory, f"*.{ext.upper()}")))
+        all_files = sorted(set(all_files))
+
+        start_index = max(0, min(start_index, len(all_files)))
+        files       = all_files[start_index:]
+        total       = len(files)
 
         if total == 0:
             blank = torch.zeros((1, 64, 64, 3), dtype=torch.float32)
             mask  = torch.zeros((1, 64, 64),    dtype=torch.float32)
-            return (blank, mask, "", 0, 0, cycle_every)
+            return (blank, mask, "", start_index, 0, cycle_every)
 
-        file_index      = (start_index + global_run // cycle_every) % total
-        step_size       = cycle_every * total
-        path            = files[file_index]
-        image, mask     = _load(path)
+        position    = (global_run // cycle_every) % total
+        file_index  = start_index + position
+        step_size   = cycle_every * total
+        path        = files[position]
+        image, mask = _load(path)
         return (image, mask, path, file_index, total, step_size)
 
 

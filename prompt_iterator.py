@@ -37,16 +37,20 @@ class PromptIterator:
 
     def iterate(self, directory, global_run, cycle_every, start_index):
         cycle_every = max(1, cycle_every)
-        files       = sorted(glob_module.glob(os.path.join(directory.strip(), "*.txt")))
+        all_files   = sorted(glob_module.glob(os.path.join(directory.strip(), "*.txt")))
+
+        start_index = max(0, min(start_index, len(all_files)))
+        files       = all_files[start_index:]
         total       = len(files)
 
         if total == 0:
-            return ("", 0, 0, cycle_every)
+            return ("", start_index, 0, cycle_every)
 
-        file_index = (start_index + global_run // cycle_every) % total
+        position   = (global_run // cycle_every) % total
+        file_index = start_index + position
         step_size  = cycle_every * total
 
-        with open(files[file_index], "r", encoding="utf-8") as f:
+        with open(files[position], "r", encoding="utf-8") as f:
             text = f.read().strip()
 
         return (text, file_index, total, step_size)
