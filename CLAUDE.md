@@ -50,6 +50,18 @@ All new nodes return `float("nan")` unconditionally so ComfyUI always re-execute
 
 `prompt_file_iterator.py` must never be modified. It is a stable public API; users may have workflows depending on the exact `PromptFileIterator` node name and output signature.
 
+## Frontend extension
+
+`WEB_DIRECTORY = "./web"` in `__init__.py` tells ComfyUI to auto-load all `.js` files from `web/`. Currently:
+
+- `web/folder_picker.js` — adds a "Browse Folder" button to `FolderIterator` nodes. Calls `GET /iterator_suite/browse?path=...` (registered in `server_routes.py`) which returns `{path, parent, dirs:[{name,path}]}`. On Windows with no path, returns drive letters. The dialog handles Escape and backdrop-click to close.
+
+`server_routes.py` registers the aiohttp route using `PromptServer.instance.routes`. The whole file is wrapped in `try/except` so it silently does nothing outside ComfyUI.
+
+## Checkpoint / LoRA multi-select
+
+`CheckpointIterator` and `LoraIterator` expose 8 optional COMBO inputs (`model_1`…`model_8` / `lora_1`…`lora_8`). Slots left at `"None"` are filtered out; the remaining selections form the iteration list. If all slots are `"None"`, the node falls back to iterating all available models. `_SLOTS = 8` at the top of each file controls the count.
+
 ## No build or test setup
 
 No dependencies beyond the Python standard library and ComfyUI's built-in `folder_paths`. No test suite, linter config, or build step.
