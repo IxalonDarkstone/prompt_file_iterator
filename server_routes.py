@@ -10,8 +10,13 @@ try:
     async def list_models(request):
         model_type = request.query.get('type', 'checkpoints')
         try:
-            models = sorted(_fp.get_filename_list(model_type))
-            return web.json_response({"models": models})
+            models = set(_fp.get_filename_list(model_type))
+            if model_type == 'checkpoints':
+                try:
+                    models |= set(_fp.get_filename_list('diffusion_models'))
+                except Exception:
+                    pass
+            return web.json_response({"models": sorted(models)})
         except Exception as exc:
             return web.json_response({"error": str(exc), "models": []}, status=400)
 

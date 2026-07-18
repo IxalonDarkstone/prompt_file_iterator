@@ -26,7 +26,9 @@ class CheckpointLoaderFromString:
     def load(self, model_name):
         ckpt_path = folder_paths.get_full_path("checkpoints", model_name)
         if ckpt_path is None:
-            raise ValueError(f"Checkpoint not found: {model_name!r}")
+            ckpt_path = folder_paths.get_full_path("diffusion_models", model_name)
+        if ckpt_path is None:
+            raise ValueError(f"Checkpoint not found in checkpoints or diffusion_models: {model_name!r}")
         out = comfy.sd.load_checkpoint_guess_config(
             ckpt_path,
             output_vae=True,

@@ -40,7 +40,12 @@ class CheckpointIterator:
             selected = []
 
         if not selected:
-            selected = sorted(folder_paths.get_filename_list("checkpoints"))
+            ckpts = folder_paths.get_filename_list("checkpoints")
+            try:
+                diff = folder_paths.get_filename_list("diffusion_models")
+            except Exception:
+                diff = []
+            selected = sorted(set(ckpts) | set(diff))
 
         total = len(selected)
         if total == 0:
