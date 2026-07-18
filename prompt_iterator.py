@@ -21,6 +21,7 @@ class PromptIterator:
             "required": {
                 "directory":   ("STRING", {"default": ""}),
                 "global_run":  ("INT",    {"forceInput": True}),
+                "mode":        (["increment", "fixed"],),
                 "cycle_every": ("INT",    {"default": 1, "min": 1, "max": 99999}),
                 "start_index": ("INT",    {"default": 0, "min": 0, "max": 99999}),
             }
@@ -32,10 +33,10 @@ class PromptIterator:
     CATEGORY      = "Iterators"
 
     @classmethod
-    def IS_CHANGED(cls, directory, global_run, cycle_every, start_index):
+    def IS_CHANGED(cls, directory, global_run, mode, cycle_every, start_index):
         return float("nan")
 
-    def iterate(self, directory, global_run, cycle_every, start_index):
+    def iterate(self, directory, global_run, mode, cycle_every, start_index):
         cycle_every = max(1, cycle_every)
         all_files   = sorted(glob_module.glob(os.path.join(directory.strip(), "*.txt")))
 
@@ -46,7 +47,11 @@ class PromptIterator:
         if total == 0:
             return ("", start_index, 0, cycle_every)
 
-        position   = (global_run // cycle_every) % total
+        if mode == "fixed":
+            position = 0
+        else:
+            position = (global_run // cycle_every) % total
+
         file_index = start_index + position
         step_size  = cycle_every * total
 
