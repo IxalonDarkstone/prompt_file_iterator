@@ -80,6 +80,13 @@ function setupNode(node, getOptions, addLabel) {
     node.properties = node.properties ?? {};
     node.properties.models_json = node.properties.models_json ?? "[]";
 
+    // onNodeCreated can fire more than once for the same node instance (e.g.
+    // switching ComfyUI workflow tabs). Without this guard a second "+ Add"
+    // button gets appended each time, which shifts every widget after it out
+    // of sync with the saved widgets_values array on the next save/restore.
+    if (node.__itsAddBtnAdded) return;
+    node.__itsAddBtnAdded = true;
+
     node.addWidget("button", addLabel, ADD_BTN_NAME, () => {
         const opts = getOptions();
         addSlot(node, getOptions, opts[0] ?? "");

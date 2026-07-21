@@ -11,6 +11,14 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = function () {
             onNodeCreated?.apply(this, arguments);
 
+            // onNodeCreated can fire more than once for the same node instance
+            // (e.g. switching ComfyUI workflow tabs). Without this guard a
+            // second "Browse Folder" button gets appended each time, which
+            // shifts every widget after it out of sync with the saved
+            // widgets_values array on the next save/restore cycle.
+            if (this.__itsBrowseAdded) return;
+            this.__itsBrowseAdded = true;
+
             const dirWidget = this.widgets?.find(w => w.name === "directory");
             if (!dirWidget) return;
 
