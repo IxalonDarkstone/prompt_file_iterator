@@ -64,19 +64,6 @@ function registerExtension({ nodeName, modelType, addLabel }) {
             const origOnConfigure = nodeType.prototype.onConfigure;
             nodeType.prototype.onConfigure = function (info) {
                 origOnConfigure?.apply(this, arguments);
-
-                // Converting cycle_every to an input (wiring it from another
-                // iterator's step_size, the documented chaining pattern) can
-                // leave a stale widget object of the same name behind. Since
-                // widgets_values restores positionally, a leftover widget
-                // shifts every widget declared after it onto the wrong saved
-                // value. Strip any widget whose name now also has a real
-                // input before slots are rebuilt below.
-                if (this.widgets?.length && this.inputs?.length) {
-                    const inputNames = new Set(this.inputs.map(i => i.name));
-                    this.widgets = this.widgets.filter(w => !inputNames.has(w.name));
-                }
-
                 restoreSlots(this, getOptions, addLabel);
             };
         },
