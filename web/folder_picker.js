@@ -33,23 +33,6 @@ app.registerExtension({
             // positional save/restore array at all.
             browseWidget.serialize = false;
         };
-
-        // Converting a widget to an input (e.g. wiring cycle_every from
-        // another iterator's step_size output, the documented chaining
-        // pattern) can leave a stale widget object of the same name behind,
-        // depending on ComfyUI frontend version/timing. Since widgets_values
-        // is restored positionally after configure, a leftover widget here
-        // shifts every widget declared after it in INPUT_TYPES onto the
-        // wrong saved value (mode landing on cycle_every, start_index
-        // landing on mode, etc). Strip any widget whose name now also has a
-        // real input so the widget list matches what was actually saved.
-        const onConfigure = nodeType.prototype.onConfigure;
-        nodeType.prototype.onConfigure = function (info) {
-            onConfigure?.apply(this, arguments);
-            if (!this.widgets?.length || !this.inputs?.length) return;
-            const inputNames = new Set(this.inputs.map(i => i.name));
-            this.widgets = this.widgets.filter(w => !inputNames.has(w.name));
-        };
     },
 });
 
