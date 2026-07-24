@@ -27,8 +27,8 @@ class PromptIterator:
             }
         }
 
-    RETURN_TYPES  = ("STRING", "INT", "INT", "INT")
-    RETURN_NAMES  = ("prompt_text", "file_index", "prompts_found", "step_size")
+    RETURN_TYPES  = ("STRING", "INT", "INT", "INT", "STRING")
+    RETURN_NAMES  = ("prompt_text", "file_index", "prompts_found", "step_size", "file_list")
     FUNCTION      = "iterate"
     CATEGORY      = "Iterators"
 
@@ -39,13 +39,14 @@ class PromptIterator:
     def iterate(self, directory, global_run, mode, cycle_every, start_index):
         cycle_every = max(1, cycle_every)
         all_files   = sorted(glob_module.glob(os.path.join(directory.strip(), "*.txt")))
+        file_list   = "\n".join(f"{i}: {os.path.basename(p)}" for i, p in enumerate(all_files))
 
         start_index = max(0, min(start_index, len(all_files)))
         files       = all_files[start_index:]
         total       = len(files)
 
         if total == 0:
-            return ("", start_index, 0, cycle_every)
+            return ("", start_index, 0, cycle_every, file_list)
 
         if mode == "fixed":
             position = 0
@@ -58,7 +59,7 @@ class PromptIterator:
         with open(files[position], "r", encoding="utf-8") as f:
             text = f.read().strip()
 
-        return (text, file_index, total, step_size)
+        return (text, file_index, total, step_size, file_list)
 
 
 NODE_CLASS_MAPPINGS        = {"PromptIterator": PromptIterator}

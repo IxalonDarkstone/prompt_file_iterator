@@ -58,8 +58,8 @@ class ImageIterator:
             }
         }
 
-    RETURN_TYPES  = ("IMAGE",  "MASK",  "STRING",     "INT",        "INT",           "INT")
-    RETURN_NAMES  = ("IMAGE",  "MASK",  "image_path", "file_index", "images_found",  "step_size")
+    RETURN_TYPES  = ("IMAGE",  "MASK",  "STRING",     "INT",        "INT",           "INT",       "STRING")
+    RETURN_NAMES  = ("IMAGE",  "MASK",  "image_path", "file_index", "images_found",  "step_size", "file_list")
     FUNCTION      = "iterate"
     CATEGORY      = "Iterators"
 
@@ -76,6 +76,7 @@ class ImageIterator:
             all_files.extend(glob_module.glob(os.path.join(directory, f"*.{ext}")))
             all_files.extend(glob_module.glob(os.path.join(directory, f"*.{ext.upper()}")))
         all_files = sorted(set(all_files))
+        file_list = "\n".join(f"{i}: {os.path.basename(p)}" for i, p in enumerate(all_files))
 
         start_index = max(0, min(start_index, len(all_files)))
         files       = all_files[start_index:]
@@ -84,7 +85,7 @@ class ImageIterator:
         if total == 0:
             blank = torch.zeros((1, 64, 64, 3), dtype=torch.float32)
             mask  = torch.zeros((1, 64, 64),    dtype=torch.float32)
-            return (blank, mask, "", start_index, 0, cycle_every)
+            return (blank, mask, "", start_index, 0, cycle_every, file_list)
 
         if mode == "fixed":
             position = 0
@@ -95,7 +96,7 @@ class ImageIterator:
         step_size   = cycle_every * total
         path        = files[position]
         image, mask = _load(path)
-        return (image, mask, path, file_index, total, step_size)
+        return (image, mask, path, file_index, total, step_size, file_list)
 
 
 NODE_CLASS_MAPPINGS        = {"ImageIterator": ImageIterator}

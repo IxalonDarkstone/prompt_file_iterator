@@ -16,6 +16,7 @@ A ComfyUI custom node pack for multi-dimensional iteration over images, prompts,
 | `image_iterator.py` | `ImageIterator` | Image Iterator | Iterators |
 | `checkpoint_iterator.py` | `CheckpointIterator` | Checkpoint Iterator | Iterators |
 | `lora_iterator.py` | `LoraIterator` | LoRA Iterator | Iterators |
+| `text_viewer.py` | `TextViewer` | Text Viewer | Iterators |
 
 `__init__.py` merges all mappings and sets `WEB_DIRECTORY = "./web"`.
 `state.py` provides shared `load_state`/`save_state` used only by `IterationController`.
@@ -58,6 +59,9 @@ PIL, NumPy, and Torch are always available in ComfyUI's Python environment.
 
 - `web/folder_picker.js` — adds a Browse button to `PromptIterator` and `ImageIterator` nodes. Calls `GET /iterator_suite/browse?path=...` (returns `{path, parent, dirs:[{name,path}]}`). Windows-aware: no path → returns drive letters.
 - `web/model_selector.js` — adds dynamic `+ Add` / `✕` slot widgets to `CheckpointIterator` and `LoraIterator`. Each node has a hidden `models_json` STRING widget (zero-height draw override) that stores the JSON-serialised list of selected model names. Slots use `LiteGraph.ContextMenu` for dropdowns and are restored from `models_json` on workflow load via `onConfigure`.
+- `web/text_viewer.js` — adds a read-only, scrollable multiline textarea widget to `TextViewer` (via ComfyUI's built-in `ComfyWidgets["STRING"]` helper, not a custom canvas widget) and fills it from `onExecuted`'s `message.text[0]`. The widget is `serialize: false` since its content is re-populated every run, not user input.
+
+`PromptIterator` and `ImageIterator` both output a `file_list` STRING (`"{index}: {basename}"` per line, over the full undropped file list) — wire it into `TextViewer` to see every discovered file and pick a `start_index`.
 
 ## Backwards compatibility constraint
 
